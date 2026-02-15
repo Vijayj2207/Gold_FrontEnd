@@ -29,49 +29,39 @@ const Login = () => {
     }
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const url = isRegister
-        ? registerUser()
-        : loginUser();
-
-      const bodyData = isRegister
-        ? { name, email: username, password }
-        : { email: username, password };
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(bodyData)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Something went wrong");
-      }
-
-      /* ✅ Register Success */
       if (isRegister) {
+        // ✅ Register
+        await registerUser({ 
+          name, 
+          email: username, 
+          password 
+        });
+        
         toast.success("Registration successful. Please login.");
         setIsRegister(false);
         setName("");
+        setUsername("");
         setPassword("");
-        return;
+        
+      } else {
+        // ✅ Login
+        const data = await loginUser({ 
+          email: username, 
+          password 
+        });
+        
+        login(data.token); // update context
+        toast.success("Login successful");
+        navigate("/dashboard");
       }
 
-      /* ✅ Login Success */
-      login(data.token); // update context
-      toast.success("Login successful");
-      navigate("/dashboard");
-
     } catch (error: any) {
-      toast.error(error.message || "Login failed");
+      toast.error(error.message || "Operation failed");
     } finally {
       setIsLoading(false);
     }
