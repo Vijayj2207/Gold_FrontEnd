@@ -19,6 +19,75 @@ import { toast } from 'sonner';
 import { User } from '@/types';
 import { useNavigate } from 'react-router-dom';
 
+interface UserFormProps {
+  formData: {
+    name: string;
+    mobile: string;
+    address: string;
+    profilePicture: string;
+  };
+  setFormData: (data: any) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  editingUser: User | null;
+  onCancel: () => void;
+}
+
+const UserForm = ({ formData, setFormData, onSubmit, editingUser, onCancel }: UserFormProps) => (
+  <form onSubmit={onSubmit} className="space-y-4">
+    <div className="space-y-2">
+      <Label htmlFor="name">Full Name</Label>
+      <Input
+        id="name"
+        placeholder="Enter full name"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        required
+      />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="mobile">Mobile Number</Label>
+      <Input
+        id="mobile"
+        placeholder="Enter mobile number"
+        value={formData.mobile}
+        onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+        required
+      />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="address">Address</Label>
+      <Textarea
+        id="address"
+        placeholder="Enter full address"
+        value={formData.address}
+        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+        rows={3}
+      />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="profilePicture">Profile Picture URL (optional)</Label>
+      <Input
+        id="profilePicture"
+        placeholder="Enter image URL"
+        value={formData.profilePicture}
+        onChange={(e) => setFormData({ ...formData, profilePicture: e.target.value })}
+      />
+    </div>
+    <div className="flex gap-3 pt-2">
+      <Button type="submit" className="flex-1 bg-gradient-to-r from-gold-dark to-gold text-primary">
+        {editingUser ? 'Update User' : 'Create User'}
+      </Button>
+      <Button 
+        type="button" 
+        variant="outline" 
+        onClick={onCancel}
+      >
+        Cancel
+      </Button>
+    </div>
+  </form>
+);
+
 const UsersPage = () => {
   const { users, addUser, updateUser, deleteUser, getCustomerDeposits } = useData();
   const navigate = useNavigate();
@@ -72,65 +141,11 @@ const UsersPage = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const UserForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">Full Name</Label>
-        <Input
-          id="name"
-          placeholder="Enter full name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="mobile">Mobile Number</Label>
-        <Input
-          id="mobile"
-          placeholder="Enter mobile number"
-          value={formData.mobile}
-          onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
-        <Textarea
-          id="address"
-          placeholder="Enter full address"
-          value={formData.address}
-          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          rows={3}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="profilePicture">Profile Picture URL (optional)</Label>
-        <Input
-          id="profilePicture"
-          placeholder="Enter image URL"
-          value={formData.profilePicture}
-          onChange={(e) => setFormData({ ...formData, profilePicture: e.target.value })}
-        />
-      </div>
-      <div className="flex gap-3 pt-2">
-        <Button type="submit" className="flex-1 bg-gradient-to-r from-gold-dark to-gold text-primary">
-          {editingUser ? 'Update User' : 'Create User'}
-        </Button>
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={() => {
-            setIsCreateOpen(false);
-            setEditingUser(null);
-            setFormData({ name: '', mobile: '', address: '', profilePicture: '' });
-          }}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
-  );
+  const handleCancel = () => {
+    setIsCreateOpen(false);
+    setEditingUser(null);
+    setFormData({ name: '', mobile: '', address: '', profilePicture: '' });
+  };
 
   return (
     <div className="space-y-6 pb-20 md:pb-6">
@@ -152,7 +167,13 @@ const UsersPage = () => {
               <DialogTitle>Create New User</DialogTitle>
               <DialogDescription>Add a new customer to the system</DialogDescription>
             </DialogHeader>
-            <UserForm />
+            <UserForm
+              formData={formData}
+              setFormData={setFormData}
+              onSubmit={handleSubmit}
+              editingUser={editingUser}
+              onCancel={handleCancel}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -246,13 +267,19 @@ const UsersPage = () => {
       )}
 
       {/* Edit Dialog */}
-      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+      <Dialog open={!!editingUser} onOpenChange={(open) => !open && handleCancel()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>Update customer information</DialogDescription>
           </DialogHeader>
-          <UserForm />
+          <UserForm
+            formData={formData}
+            setFormData={setFormData}
+            onSubmit={handleSubmit}
+            editingUser={editingUser}
+            onCancel={handleCancel}
+          />
         </DialogContent>
       </Dialog>
     </div>
