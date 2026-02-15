@@ -1,4 +1,5 @@
-const BASE_URL = "http://localhost:5000/api/users";
+// const BASE_URL = "http://localhost:5000/api/users";
+const BASE_URL = import.meta.env.VITE_API_URL + "/api/users";
 
 // Helper function to get token
 const getAuthHeader = () => {

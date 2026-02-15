@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { registerUser,loginUser } from "@/services/userService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { toast } from "sonner";
@@ -34,8 +35,8 @@ const Login = () => {
 
     try {
       const url = isRegister
-        ? "http://localhost:5000/api/users/register"
-        : "http://localhost:5000/api/users/login";
+        ? registerUser()
+        : loginUser();
 
       const bodyData = isRegister
         ? { name, email: username, password }
