@@ -91,7 +91,7 @@ const Login = () => {
 
             {isRegister && (
               <div>
-                <Label>Name</Label>
+                <Label>Namtugfe</Label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
