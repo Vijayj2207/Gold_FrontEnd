@@ -54,3 +54,15 @@ export const forceRefreshGoldRate = async () => {
     throw error;
   }
 };
+
+export const getDashboardStats = async () => {
+  const res = await fetch(`${API_URL}/api/dashboard/stats`);
+  const data = await res.json();
+  return {
+    totalUsers: data?.totalUsers ?? 0,
+    totalDeposits: data?.totalDeposits ?? 0,
+    totalPayments: data?.totalPayments ?? 0,
+    recentDeposits: data?.recentDeposits ?? [],
+    recentPayments: data?.recentPayments ?? [],
+  };
+}

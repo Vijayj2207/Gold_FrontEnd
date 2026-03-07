@@ -1,4 +1,3 @@
-import { useData } from "@/context/DataContext";
 import {
   Card,
   CardContent,
@@ -14,36 +13,77 @@ import {
   TrendingDown,
   ArrowUpRight,
   Coins,
+  Loader2,
+  Banknote,
+  Smartphone,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { getCurrentGoldRate } from "@/services/DashboardService";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const Dashboard = () => {
-  const { stats, deposits, payments } = useData();
   const navigate = useNavigate();
 
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalDeposits: 0,
+    totalPayments: 0,
+    recentDeposits: [] as any[],
+    recentPayments: [] as any[],
+  });
+
   const [goldRateData, setGoldRateData] = useState({
-    currentRate: stats?.currentGoldRate || 0,
+    currentRate: 0,
     change: { amount: 0, percentage: 0 },
   });
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    getCurrentGoldRate()
-      .then((data) => {
-        setGoldRateData({
-          currentRate: data?.currentRate || 0,
-          change: data?.change || { amount: 0, percentage: 0 },
-        });
-      })
-      .catch((err) => {
-        console.error("Failed to fetch gold rate:", err);
-        setGoldRateData({
-          currentRate: stats?.currentGoldRate || 0,
-          change: { amount: 0, percentage: 0 },
-        });
+    fetchDashboardData();
+    fetchGoldRate();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API_URL}/api/dashboard/stats`);
+      console.log("Dashboard stats response:", res.data);
+      setStats({
+        totalUsers: res.data.totalUsers || 0,
+        totalDeposits: res.data.totalDeposits || 0,
+        totalPayments: res.data.totalPayments || 0,
+        recentDeposits: res.data.recentDeposits || [],
+        recentPayments: res.data.recentPayments || [],
       });
-  }, [stats?.currentGoldRate]);
+    } catch (err) {
+      console.error("Failed to fetch dashboard stats:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchGoldRate = async () => {
+    try {
+      const data = await getCurrentGoldRate();
+      const rate = data?.currentRate ?? data?.rate ?? 0;
+      const changeAmount = data?.change?.amount ?? data?.change ?? 0;
+      const changePercentage =
+        data?.change?.percentage ?? data?.changePercentage ?? 0;
+      setGoldRateData({
+        currentRate: Number(rate) || 0,
+        change: {
+          amount: Number(changeAmount) || 0,
+          percentage: Number(changePercentage) || 0,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to fetch gold rate:", err);
+    }
+  };
 
   const statCards = [
     {
@@ -58,7 +98,7 @@ const Dashboard = () => {
     },
     {
       title: "Total Users",
-      value: stats?.totalUsers ?? 0,
+      value: stats.totalUsers,
       subtitle: "registered customers",
       icon: Users,
       color: "from-blue-500 to-blue-600",
@@ -67,7 +107,7 @@ const Dashboard = () => {
     },
     {
       title: "Total Deposits",
-      value: stats?.totalDeposits ?? 0,
+      value: stats.totalDeposits,
       subtitle: "active deposits",
       icon: Receipt,
       color: "from-emerald-500 to-emerald-600",
@@ -76,7 +116,7 @@ const Dashboard = () => {
     },
     {
       title: "Total Payments",
-      value: `₹${(stats?.totalPayments || 0).toLocaleString("en-IN")}`,
+      value: `₹${(stats.totalPayments || 0).toLocaleString("en-IN")}`,
       subtitle: "collected",
       icon: CreditCard,
       color: "from-violet-500 to-violet-600",
@@ -85,8 +125,13 @@ const Dashboard = () => {
     },
   ];
 
-  const recentDeposits = (deposits || []).slice(-5).reverse();
-  const recentPayments = (payments || []).slice(-5).reverse();
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-gold" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20 md:pb-6">
@@ -127,7 +172,6 @@ const Dashboard = () => {
                     <p className="text-[10px] sm:text-xs text-muted-foreground">
                       {stat.subtitle}
                     </p>
-
                     {stat.showChange &&
                       stat.change &&
                       Math.abs(stat.change.amount) > 0 && (
@@ -174,32 +218,34 @@ const Dashboard = () => {
             <CardDescription>Latest deposit transactions</CardDescription>
           </CardHeader>
           <CardContent>
-            {recentDeposits.length === 0 ? (
+            {stats.recentDeposits.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Coins className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>No deposits yet</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {recentDeposits.map((deposit) => (
+                {stats.recentDeposits.map((deposit) => (
                   <div
                     key={deposit.id}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => navigate(`/deposits`)}
                   >
                     <div>
                       <p className="font-medium text-sm">
-                        {deposit.customerName}
+                        {deposit.customer_name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {deposit.depositId}
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {deposit.deposit_uid}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-sm">
-                        ₹{(deposit.amount || 0).toLocaleString("en-IN")}
+                        ₹{(Number(deposit.amount) || 0).toLocaleString("en-IN")}
                       </p>
                       <p className="text-xs text-gold">
-                        {(deposit.goldWeight || 0).toFixed(3)}g gold
+                        {(Number(deposit.gold_weight_grams) || 0).toFixed(3)}g
+                        gold
                       </p>
                     </div>
                   </div>
@@ -219,32 +265,41 @@ const Dashboard = () => {
             <CardDescription>Latest payment transactions</CardDescription>
           </CardHeader>
           <CardContent>
-            {recentPayments.length === 0 ? (
+            {stats.recentPayments.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>No payments yet</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {recentPayments.map((payment) => (
+                {stats.recentPayments.map((payment) => (
                   <div
                     key={payment.id}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => navigate(`/payments`)}
                   >
-                    <div>
-                      <p className="font-medium text-sm">
-                        {payment.customerName}
-                      </p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {payment.paymentMode}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      {payment.payment_mode === "Cash" ? (
+                        <Banknote className="w-4 h-4 text-emerald-500" />
+                      ) : (
+                        <Smartphone className="w-4 h-4 text-blue-500" />
+                      )}
+                      <div>
+                        <p className="font-medium text-sm">
+                          {payment.customer_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {payment.payment_mode}
+                        </p>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-sm text-success">
-                        +₹{(payment.amount || 0).toLocaleString("en-IN")}
+                      <p className="font-semibold text-sm text-emerald-600">
+                        +₹
+                        {(Number(payment.amount) || 0).toLocaleString("en-IN")}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {payment.time}
+                        {new Date(payment.paid_at).toLocaleDateString("en-IN")}
                       </p>
                     </div>
                   </div>
