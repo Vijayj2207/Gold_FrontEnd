@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_URL =
-  (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/payments";
+  (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/customers";
 
 export const getUsers = async () => {
   const res = await axios.get(API_URL);
