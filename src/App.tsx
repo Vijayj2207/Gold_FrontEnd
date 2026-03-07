@@ -1,7 +1,9 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -16,7 +18,7 @@ import UserDetails from "@/pages/UserDetails";
 import DepositsPage from "@/pages/DepositsPage";
 import PaymentsPage from "@/pages/PaymentsPage";
 import GoldPricePage from "@/pages/GoldPricePage";
-import NotFound from "./pages/NotFound";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -39,50 +41,78 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* LOGIN */}
+      {/* LOGIN PAGE */}
       <Route
         path="/login"
         element={
-          isAuthenticated
-            ? <Navigate to="/dashboard" replace />
-            : <Login />
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
         }
       />
 
       {/* DEFAULT */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-      {/* PROTECTED */}
+      {/* DASHBOARD */}
       <Route
         path="/dashboard"
-        element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
       />
 
+      {/* USERS */}
       <Route
         path="/users"
-        element={<ProtectedRoute><UsersPage /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <UsersPage />
+          </ProtectedRoute>
+        }
       />
 
+      {/* USER DETAILS */}
       <Route
         path="/users/:id"
-        element={<ProtectedRoute><UserDetails /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <UserDetails />
+          </ProtectedRoute>
+        }
       />
 
+      {/* DEPOSITS */}
       <Route
         path="/deposits"
-        element={<ProtectedRoute><DepositsPage /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <DepositsPage />
+          </ProtectedRoute>
+        }
       />
 
+      {/* PAYMENTS */}
       <Route
         path="/payments"
-        element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <PaymentsPage />
+          </ProtectedRoute>
+        }
       />
 
+      {/* GOLD PRICE */}
       <Route
         path="/gold-price"
-        element={<ProtectedRoute><GoldPricePage /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <GoldPricePage />
+          </ProtectedRoute>
+        }
       />
 
+      {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -90,21 +120,26 @@ const AppRoutes = () => {
 
 /* ================= APP ROOT ================= */
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <DataProvider>
-        <TooltipProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-
-          <Toaster />
-          <Sonner />
-        </TooltipProvider>
-      </DataProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        {" "}
+        {/* ✅ BrowserRouter is now FIRST */}
+        <AuthProvider>
+          {" "}
+          {/* ✅ AuthProvider is INSIDE BrowserRouter */}
+          <DataProvider>
+            <TooltipProvider>
+              <AppRoutes />
+              <Toaster />
+              <Sonner />
+            </TooltipProvider>
+          </DataProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

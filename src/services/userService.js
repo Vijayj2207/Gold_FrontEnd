@@ -1,7 +1,6 @@
-// const BASE_URL = "http://localhost:5000/api/users";
-const BASE_URL = import.meta.env.VITE_API_URL + "/api/users";
+const BASE_URL =
+  (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/users";
 
-// Helper function to get token
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -13,12 +12,9 @@ const getAuthHeader = () => {
 export const registerUser = async (userData) => {
   const response = await fetch(`${BASE_URL}/register`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(userData)
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(userData),
   });
-
   return await response.json();
 };
 
@@ -28,18 +24,13 @@ export const registerUser = async (userData) => {
 export const loginUser = async (loginData) => {
   const response = await fetch(`${BASE_URL}/login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(loginData)
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(loginData),
   });
 
   const data = await response.json();
 
-  if (data.token) {
-    localStorage.setItem("token", data.token);
-  }
-
+  // ✅ Removed localStorage.setItem here — AuthContext handles it
   return data;
 };
 
@@ -51,10 +42,9 @@ export const getUsers = async () => {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      ...getAuthHeader()
-    }
+      ...getAuthHeader(),
+    },
   });
-
   return await response.json();
 };
 
@@ -63,11 +53,8 @@ export const getUsers = async () => {
 =========================== */
 export const getUserById = async (id) => {
   const response = await fetch(`${BASE_URL}/${id}`, {
-    headers: {
-      ...getAuthHeader()
-    }
+    headers: { ...getAuthHeader() },
   });
-
   return await response.json();
 };
 
@@ -79,11 +66,10 @@ export const updateUser = async (id, userData) => {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      ...getAuthHeader()
+      ...getAuthHeader(),
     },
-    body: JSON.stringify(userData)
+    body: JSON.stringify(userData),
   });
-
   return await response.json();
 };
 
@@ -93,10 +79,7 @@ export const updateUser = async (id, userData) => {
 export const deleteUser = async (id) => {
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "DELETE",
-    headers: {
-      ...getAuthHeader()
-    }
+    headers: { ...getAuthHeader() },
   });
-
   return await response.json();
 };

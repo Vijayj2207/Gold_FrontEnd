@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { registerUser,loginUser } from "@/services/userService";
+import { registerUser, loginUser } from "@/services/userService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { toast } from "sonner";
@@ -28,38 +28,23 @@ const Login = () => {
       navigate("/dashboard");
     }
   }, []);
-
-    const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
       if (isRegister) {
-        // ✅ Register
-        await registerUser({ 
-          name, 
-          email: username, 
-          password 
-        });
-        
+        await registerUser({ name, email: username, password });
         toast.success("Registration successful. Please login.");
         setIsRegister(false);
         setName("");
         setUsername("");
         setPassword("");
-        
       } else {
-        // ✅ Login
-        const data = await loginUser({ 
-          email: username, 
-          password 
-        });
-        
-        login(data.token); // update context
+        // ✅ Just call login() from AuthContext — it handles token saving
+        await login({ email: username, password });
         toast.success("Login successful");
-        navigate("/dashboard");
       }
-
     } catch (error: any) {
       toast.error(error.message || "Operation failed");
     } finally {
@@ -78,7 +63,6 @@ const Login = () => {
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-
             {isRegister && (
               <div>
                 <Label>Namtugfe</Label>
@@ -111,11 +95,7 @@ const Login = () => {
             </div>
 
             <Button className="w-full" disabled={isLoading}>
-              {isLoading
-                ? "Please wait..."
-                : isRegister
-                ? "Register"
-                : "Login"}
+              {isLoading ? "Please wait..." : isRegister ? "Register" : "Login"}
             </Button>
           </form>
 

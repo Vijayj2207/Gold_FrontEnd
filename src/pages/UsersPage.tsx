@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { useData } from '@/context/DataContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -10,278 +10,348 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Search, Users, Phone, MapPin, Coins, Trash2, Edit, User as UserIcon } from 'lucide-react';
-import { toast } from 'sonner';
-import { User } from '@/types';
-import { useNavigate } from 'react-router-dom';
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Plus, Search, Users, Phone, MapPin, Trash2, Edit } from "lucide-react";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
-interface UserFormProps {
-  formData: {
-    name: string;
-    mobile: string;
-    address: string;
-    profilePicture: string;
-  };
-  setFormData: (data: any) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  editingUser: User | null;
-  onCancel: () => void;
+const API_URL = "http://localhost:5000/api/customers";
+
+interface User {
+  id: number;
+  name: string;
+  mobile: string;
+  address: string;
+  profilePicture?: string;
 }
 
-const UserForm = ({ formData, setFormData, onSubmit, editingUser, onCancel }: UserFormProps) => (
-  <form onSubmit={onSubmit} className="space-y-4">
-    <div className="space-y-2">
-      <Label htmlFor="name">Full Name</Label>
-      <Input
-        id="name"
-        placeholder="Enter full name"
-        value={formData.name}
-        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        required
-      />
-    </div>
-    <div className="space-y-2">
-      <Label htmlFor="mobile">Mobile Number</Label>
-      <Input
-        id="mobile"
-        placeholder="Enter mobile number"
-        value={formData.mobile}
-        onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-        required
-      />
-    </div>
-    <div className="space-y-2">
-      <Label htmlFor="address">Address</Label>
-      <Textarea
-        id="address"
-        placeholder="Enter full address"
-        value={formData.address}
-        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-        rows={3}
-      />
-    </div>
-    <div className="space-y-2">
-      <Label htmlFor="profilePicture">Profile Picture URL (optional)</Label>
-      <Input
-        id="profilePicture"
-        placeholder="Enter image URL"
-        value={formData.profilePicture}
-        onChange={(e) => setFormData({ ...formData, profilePicture: e.target.value })}
-      />
-    </div>
-    <div className="flex gap-3 pt-2">
-      <Button type="submit" className="flex-1 bg-gradient-to-r from-gold-dark to-gold text-primary">
-        {editingUser ? 'Update User' : 'Create User'}
-      </Button>
-      <Button 
-        type="button" 
-        variant="outline" 
-        onClick={onCancel}
-      >
-        Cancel
-      </Button>
-    </div>
-  </form>
-);
-
 const UsersPage = () => {
-  const { users, addUser, updateUser, deleteUser, getCustomerDeposits } = useData();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  const [users, setUsers] = useState<User[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
   const [formData, setFormData] = useState({
-    name: '',
-    mobile: '',
-    address: '',
-    profilePicture: '',
+    name: "",
+    mobile: "",
+    address: "",
+    profilePicture: "",
   });
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.mobile.includes(searchTerm)
-  );
+  /* =========================
+     FETCH USERS
+  ========================= */
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingUser) {
-      updateUser(editingUser.id, formData);
-      toast.success('User updated successfully');
-      setEditingUser(null);
-    } else {
-      addUser(formData);
-      toast.success('User created successfully');
-      setIsCreateOpen(false);
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get(API_URL);
+
+      const mappedUsers = res.data.map((u: any) => ({
+        id: u.id,
+        name: u.full_name,
+        mobile: u.mobile_number,
+        address: u.address,
+        profilePicture: u.profile_picture_url,
+      }));
+
+      setUsers(mappedUsers);
+    } catch (error) {
+      toast.error("Failed to load users");
     }
-    setFormData({ name: '', mobile: '', address: '', profilePicture: '' });
   };
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  /* =========================
+     CREATE / UPDATE USER
+  ========================= */
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      if (editingUser) {
+        await axios.put(`${API_URL}/${editingUser.id}`, {
+          full_name: formData.name,
+          mobile_number: formData.mobile,
+          address: formData.address,
+          profile_picture_url: formData.profilePicture,
+        });
+
+        toast.success("User updated successfully");
+      } else {
+        await axios.post(API_URL, {
+          full_name: formData.name,
+          mobile_number: formData.mobile,
+          address: formData.address,
+          profile_picture_url: formData.profilePicture,
+        });
+
+        toast.success("User created successfully");
+      }
+
+      fetchUsers();
+
+      resetForm();
+      setIsDialogOpen(false);
+    } catch (error) {
+      toast.error("Operation failed");
+    }
+  };
+
+  /* =========================
+     DELETE USER
+  ========================= */
+
+  const handleDelete = async (user: User) => {
+    if (window.confirm(`Delete ${user.name}?`)) {
+      try {
+        await axios.delete(`${API_URL}/${user.id}`);
+        toast.success("User deleted");
+        fetchUsers();
+      } catch (error) {
+        toast.error("Delete failed");
+      }
+    }
+  };
+
+  /* =========================
+     EDIT USER
+  ========================= */
+
   const handleEdit = (user: User) => {
+    setEditingUser(user);
+
     setFormData({
       name: user.name,
       mobile: user.mobile,
       address: user.address,
-      profilePicture: user.profilePicture || '',
+      profilePicture: user.profilePicture || "",
     });
-    setEditingUser(user);
+
+    setIsDialogOpen(true); // 🔥 FIX: open modal
   };
 
-  const handleDelete = (user: User) => {
-    if (window.confirm(`Are you sure you want to delete ${user.name}? This will also delete all their deposits and payments.`)) {
-      deleteUser(user.id);
-      toast.success('User deleted successfully');
-    }
-  };
+  /* =========================
+     RESET FORM
+  ========================= */
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const resetForm = () => {
+    setEditingUser(null);
+
+    setFormData({
+      name: "",
+      mobile: "",
+      address: "",
+      profilePicture: "",
+    });
   };
 
   const handleCancel = () => {
-    setIsCreateOpen(false);
-    setEditingUser(null);
-    setFormData({ name: '', mobile: '', address: '', profilePicture: '' });
+    resetForm();
+    setIsDialogOpen(false);
   };
 
+  /* =========================
+     SEARCH FILTER
+  ========================= */
+
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.mobile.includes(searchTerm),
+  );
+
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+
   return (
-    <div className="space-y-6 pb-20 md:pb-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6">
+      {/* HEADER */}
+
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl md:text-3xl font-display font-semibold">Users</h1>
-          <p className="text-muted-foreground">{users.length} registered customers</p>
+          <h1 className="text-2xl font-semibold">Users</h1>
+          <p className="text-muted-foreground">
+            {users.length} registered customers
+          </p>
         </div>
-        
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-gold-dark to-gold text-primary gap-2 shadow-gold">
-              <Plus className="w-4 h-4" />
-              Add User
+            <Button
+              className="gap-2"
+              onClick={() => {
+                resetForm();
+                setIsDialogOpen(true);
+              }}
+            >
+              <Plus size={16} /> Add User
             </Button>
           </DialogTrigger>
+
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New User</DialogTitle>
-              <DialogDescription>Add a new customer to the system</DialogDescription>
+              <DialogTitle>
+                {editingUser ? "Edit User" : "Create User"}
+              </DialogTitle>
+
+              <DialogDescription>
+                {editingUser
+                  ? "Update customer information"
+                  : "Add a new customer to the system"}
+              </DialogDescription>
             </DialogHeader>
-            <UserForm
-              formData={formData}
-              setFormData={setFormData}
-              onSubmit={handleSubmit}
-              editingUser={editingUser}
-              onCancel={handleCancel}
-            />
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label>Full Name</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div>
+                <Label>Mobile Number</Label>
+                <Input
+                  value={formData.mobile}
+                  onChange={(e) =>
+                    setFormData({ ...formData, mobile: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div>
+                <Label>Address</Label>
+                <Textarea
+                  value={formData.address}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Profile Picture URL</Label>
+                <Input
+                  value={formData.profilePicture}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      profilePicture: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <Button type="submit" className="flex-1">
+                  {editingUser ? "Update User" : "Create User"}
+                </Button>
+
+                <Button type="button" variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Search */}
+      {/* SEARCH */}
+
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+
         <Input
-          placeholder="Search by name or mobile..."
+          placeholder="Search by name or mobile"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
         />
       </div>
 
-      {/* Users Grid */}
+      {/* USER LIST */}
+
       {filteredUsers.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h3 className="font-medium mb-1">No users found</h3>
-            <p className="text-sm text-muted-foreground">
-              {searchTerm ? 'Try a different search term' : 'Create your first user to get started'}
-            </p>
+            <Users className="mx-auto mb-4 opacity-50" />
+            <p>No users found</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredUsers.map((user) => {
-            const deposits = getCustomerDeposits(user.id);
-            return (
-              <Card key={user.id} className="hover:shadow-lg transition-shadow group">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="w-12 h-12 border-2 border-gold/20">
-                      <AvatarImage src={user.profilePicture} />
-                      <AvatarFallback className="bg-secondary text-foreground font-medium">
-                        {getInitials(user.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h3 
-                        className="font-semibold truncate cursor-pointer hover:text-gold transition-colors"
-                        onClick={() => navigate(`/users/${user.id}`)}
-                      >
-                        {user.name}
-                      </h3>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                        <Phone className="w-3 h-3" />
-                        <span>{user.mobile}</span>
-                      </div>
-                      {user.address && (
-                        <div className="flex items-start gap-1 text-xs text-muted-foreground mt-1">
-                          <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                          <span className="truncate">{user.address}</span>
-                        </div>
-                      )}
+        <div className="grid md:grid-cols-3 gap-4">
+          {filteredUsers.map((user) => (
+            <Card key={user.id}>
+              <CardContent className="p-4">
+                <div className="flex gap-4 items-start">
+                  <Avatar>
+                    <AvatarImage src={user.profilePicture} />
+                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex-1">
+                    <h3
+                      className="font-semibold cursor-pointer"
+                      onClick={() => navigate(`/users/${user.id}`)}
+                    >
+                      {user.name}
+                    </h3>
+
+                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Phone size={14} />
+                      {user.mobile}
                     </div>
+
+                    {user.address && (
+                      <div className="text-xs flex items-center gap-1 text-muted-foreground">
+                        <MapPin size={12} />
+                        {user.address}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Coins className="w-4 h-4 text-gold" />
-                      <span className="text-sm font-medium">{user.totalGoldWeight.toFixed(3)}g</span>
-                      <span className="text-xs text-muted-foreground">• {deposits.length} deposits</span>
-                    </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleEdit(user)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(user)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(user)}
+                    >
+                      <Edit size={16} />
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(user)}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editingUser} onOpenChange={(open) => !open && handleCancel()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>Update customer information</DialogDescription>
-          </DialogHeader>
-          <UserForm
-            formData={formData}
-            setFormData={setFormData}
-            onSubmit={handleSubmit}
-            editingUser={editingUser}
-            onCancel={handleCancel}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
