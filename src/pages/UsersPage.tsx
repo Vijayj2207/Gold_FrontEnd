@@ -17,8 +17,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plus, Search, Users, Phone, MapPin, Trash2, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+const API_URL =
+  (import.meta.env.VITE_API_URL || "http://localhost:5000") + "/api/payments";
 
-const API_URL = "http://localhost:5000/api/customers";
+
 
 interface User {
   id: number;
